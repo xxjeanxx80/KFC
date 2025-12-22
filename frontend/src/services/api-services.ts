@@ -357,8 +357,17 @@ export const reportsService = {
     const url = daysThreshold 
       ? `/reports/expired-items?daysThreshold=${daysThreshold}`
       : '/reports/expired-items';
-    const response = await enhancedApi.get(url);
-    return response.data;
+    const response = await enhancedApi.get<Array<{
+      itemId: number;
+      itemName: string;
+      sku: string;
+      batchNo: string;
+      expiryDate: string;
+      daysUntilExpiry: number;
+      quantityOnHand: number;
+      status: string;
+    }>>(url);
+    return response.data || [];
   },
 };
 

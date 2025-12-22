@@ -74,12 +74,12 @@ const SalesModal: React.FC<SalesModalProps> = ({
         {},
         { maxRetries: 2, retryDelay: 1000 }
       );
-      const batches = response.data || [];
+      const batches = (response.data || []) as Array<InventoryBatch & { storeId?: number }>;
       // Filter batches by itemId and storeId, then sum quantityOnHand for in_stock batches
       const totalAvailable = batches
         .filter(batch => 
           batch.itemId === itemId && 
-          batch.storeId === storeId && 
+          (batch.storeId === storeId || !batch.storeId) && 
           batch.status === 'in_stock'
         )
         .reduce((sum, batch) => sum + batch.quantityOnHand, 0);
@@ -168,7 +168,7 @@ const SalesModal: React.FC<SalesModalProps> = ({
     }
   };
 
-  const handleChange = (e: React.Change<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,

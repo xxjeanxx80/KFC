@@ -77,7 +77,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
         let itemName = `Item ${poItem.itemId}`;
         let sku = '';
         if (poItem.item) {
-          itemName = poItem.item.name || poItem.item.code || itemName;
+          itemName = poItem.item.itemName || itemName;
           sku = poItem.item.sku || '';
         }
         
@@ -182,8 +182,9 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
       onSuccess();
     } catch (error: unknown) {
       console.error('Failed to create GRN:', error);
+      const httpError = error as { response?: { data?: { message?: string } } };
       const errorMessage =
-        error.response?.data?.message || 'Không thể tạo GRN. Vui lòng thử lại.';
+        httpError.response?.data?.message || 'Không thể tạo GRN. Vui lòng thử lại.';
       alert(errorMessage);
     } finally {
       setLoading(false);

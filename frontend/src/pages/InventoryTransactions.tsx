@@ -5,7 +5,6 @@ import type { InventoryTransaction } from '../types';
 import { useAuth } from '../context/useAuth';
 
 const InventoryTransactions: React.FC = () => {
-  const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<InventoryTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('all');
@@ -13,7 +12,7 @@ const InventoryTransactions: React.FC = () => {
   const [endDateFilter, setEndDateFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,7 +42,6 @@ const InventoryTransactions: React.FC = () => {
       }
 
       const data = await inventoryTransactionsService.getAll(filters);
-      setTransactions(data);
       setFilteredTransactions(data);
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
@@ -125,9 +123,6 @@ const InventoryTransactions: React.FC = () => {
     }
   };
 
-  const handleFilterChange = () => {
-    fetchTransactions();
-  };
 
   const handleClearFilters = () => {
     setTransactionTypeFilter('all');

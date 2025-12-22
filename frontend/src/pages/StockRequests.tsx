@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { stockRequestsService, itemsService, storesService } from '../services/api-services';
 import { enhancedApi } from '../services/enhanced-api';
-import type { StockRequest, Item, Store, Supplier } from '../types';
+import type { StockRequest, Item, Store, Supplier, PurchaseOrder } from '../types';
 import { useAuth } from '../context/useAuth';
 
 const StockRequests: React.FC = () => {
@@ -94,28 +94,7 @@ const StockRequests: React.FC = () => {
     );
   };
 
-  const handleApprove = async (requestId: number) => {
-    if (!user?.id) {
-      alert('User information not available');
-      return;
-    }
-
-    try {
-      await stockRequestsService.approve(requestId, user.id);
-      alert('Stock request approved successfully.');
-      fetchRequests();
-    } catch (error: unknown) {
-      console.error('Failed to approve request:', error);
-      let errorMessage = 'Failed to approve stock request.';
-      if (error && typeof error === 'object' && 'response' in error) {
-        const httpError = error as { response?: { data?: { message?: string } } };
-        if (httpError.response?.data?.message) {
-          errorMessage = httpError.response.data.message;
-        }
-      }
-      alert(errorMessage);
-    }
-  };
+  // handleApprove function removed - not used
 
   const handleGeneratePO = () => {
     setIsGeneratePOModalOpen(true);
@@ -469,7 +448,7 @@ const StockRequestModal: React.FC<StockRequestModalProps> = ({ isOpen, onClose, 
 
   const fetchStores = async () => {
     try {
-      const data = await storesService.getAll();
+      const data = await storesService.getAll() as Store[];
       setStores(data);
     } catch (error) {
       console.error('Failed to fetch stores:', error);
@@ -508,7 +487,7 @@ const StockRequestModal: React.FC<StockRequestModalProps> = ({ isOpen, onClose, 
         storeId: parseInt(formData.storeId),
         itemId: parseInt(formData.itemId),
         requestedQty: parseInt(formData.requestedQty),
-        priority: formData.priority,
+        priority: formData.priority as 'low' | 'medium' | 'high',
         notes: formData.notes || undefined,
         requestedBy: user?.id,
       };
@@ -812,9 +791,8 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
   requests,
   onSuccess,
 }) => {
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [poItems, setPoItems] = useState<POItem[]>([]);
-  const [groupedBySupplier, setGroupedBySupplier] = useState<Map<number, number[]>>(new Map());
   const [formData, setFormData] = useState({
     expectedDeliveryDate: '',
     notes: '',
@@ -835,7 +813,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
   const fetchSuppliers = async () => {
     try {
       const response = await enhancedApi.get<Supplier[]>('/suppliers', {}, { maxRetries: 2, retryDelay: 1000 });
-      setSuppliers(response.data.filter((s) => s.isActive));
+      setSuppliers(response.data);
     } catch (error) {
       console.error('Failed to fetch suppliers:', error);
       alert('Không thể tải danh sách suppliers.');
@@ -861,18 +839,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
     newItems[index].supplierId = supplierId;
     setPoItems(newItems);
     
-    // Group items by supplier
-    const grouped = new Map<number, number[]>();
-    newItems.forEach((item, idx) => {
-      if (item.supplierId) {
-        const sid = parseInt(item.supplierId);
-        if (!grouped.has(sid)) {
-          grouped.set(sid, []);
-        }
-        grouped.get(sid)!.push(idx);
-      }
-    });
-    setGroupedBySupplier(grouped);
+    // Group items by supplier - removed unused state setter
   };
 
   const handleUnitPriceChange = (index: number, unitPrice: string) => {
@@ -944,7 +911,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
       // Create PO for each supplier/store group
       const results: Array<{ poId: number; requestIds: number[] }> = [];
       
-      for (const [key, group] of grouped) {
+      for (const [, group] of grouped) {
         const now = new Date();
         const poNumber = `PO-${now.getTime()}-${group.storeId}-${group.supplierId}`;
         const totalAmount = group.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
@@ -961,9 +928,12 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
           notes: formData.notes || `Tạo từ ${group.items.length} Stock Request(s)`,
         };
 
-        const poResponse = await enhancedApi.post('/procurement', poData);
-        // Controller trả về { success: true, data: result }
-        const po = poResponse.data?.data || poResponse.data;
+        const poResponse = await enhancedApi.post<{ success?: boolean; data?: PurchaseOrder } | PurchaseOrder>('/procurement', poData);
+        // Controller trả về { success: true, data: result } hoặc PurchaseOrder trực tiếp
+        const responseData = poResponse.data as { success?: boolean; data?: PurchaseOrder } | PurchaseOrder;
+        const po = (responseData && typeof responseData === 'object' && 'data' in responseData) 
+          ? responseData.data 
+          : (responseData as PurchaseOrder);
         
         if (!po || !po.id) {
           console.error('Failed to get PO ID from response:', poResponse.data);

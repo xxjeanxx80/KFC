@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Filter, Eye, Check } from 'lucide-react';
+import { Filter, Eye, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { enhancedApi } from '../services/enhanced-api';
-import { procurementService, goodsReceiptsService } from '../services/api-services';
+import { procurementService } from '../services/api-services';
 import type { PurchaseOrder } from '../types';
 import { Badge, Button } from '../components/ui';
 import { useAuth } from '../context/useAuth';
