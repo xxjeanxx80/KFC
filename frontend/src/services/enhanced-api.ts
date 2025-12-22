@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosError, type AxiosResponse, type AxiosRequestConfig } from 'axios';
 import { RetryUtility } from '../utils/retry';
 import type { RetryOptions } from '../utils/retry';
+import { API_BASE_URL, API_TIMEOUT, STORAGE_KEYS } from '../config';
 
 class EnhancedApiService {
   private client: AxiosInstance;
@@ -17,15 +18,13 @@ class EnhancedApiService {
   };
 
   constructor() {
-    // Use environment variable for API base URL, fallback to localhost for development
-    const apiBaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-    
+    // Sử dụng API_BASE_URL từ file config
     this.client = axios.create({
-      baseURL: apiBaseURL,
+      baseURL: API_BASE_URL,
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000, // 30 second timeout
+      timeout: API_TIMEOUT,
     });
 
     this.setupInterceptors();
@@ -35,8 +34,8 @@ class EnhancedApiService {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        // Automatically add token from localStorage if available
-        const token = localStorage.getItem('token');
+        // Tự động thêm token từ localStorage nếu có
+        const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
         if (token && !config.headers['Authorization']) {
           config.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -76,17 +75,17 @@ class EnhancedApiService {
           timestamp: new Date().toISOString()
         });
 
-        // Handle 401 Unauthorized - token expired or invalid
+        // Xử lý lỗi 401 Unauthorized - token hết hạn hoặc không hợp lệ
         if (error.response?.status === 401) {
-          // Remove invalid token
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          // Xóa token không hợp lệ
+          localStorage.removeItem(STORAGE_KEYS.TOKEN);
+          localStorage.removeItem(STORAGE_KEYS.USER);
           this.removeAuthToken();
           
-          // Dispatch custom event to notify AuthContext
+          // Gửi event để thông báo cho AuthContext
           window.dispatchEvent(new Event('auth:logout'));
           
-          // Redirect to login if not already there
+          // Chuyển hướng đến trang login nếu chưa ở đó
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
