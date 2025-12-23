@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, Settings } from 'lucide-react';
 import { Button } from './ui';
 import { itemsService } from '../services/api-services';
-import { useAuth } from '../context/useAuth';
 
 interface StockAlertModalProps {
   isOpen: boolean;
