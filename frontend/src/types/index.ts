@@ -29,6 +29,10 @@ export interface Item {
   unit: string;
   minStockLevel: number;
   maxStockLevel: number;
+  safetyStock?: number;
+  storageType?: 'cold' | 'frozen';
+  minTemperature?: number;
+  maxTemperature?: number;
   isActive?: boolean;
 }
 
@@ -49,8 +53,24 @@ export interface Supplier {
   contactPerson: string;
   email: string;
   phone: string;
+  address?: string;
   leadTimeDays: number;
   reliabilityScore: number;
+}
+
+export interface SupplierItem {
+  id: number;
+  supplierId: number;
+  itemId: number;
+  item?: Item;
+  unitPrice: number;
+  currency: string;
+  minOrderQty: number;
+  leadTimeDays: number | null;
+  isPreferred: boolean;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  isActive: boolean;
 }
 
 export interface PurchaseOrderItem {
@@ -155,5 +175,15 @@ export interface InventoryTransaction {
   referenceId?: number;
   createdBy?: number;
   user?: User;
+  createdAt: string;
+}
+
+export interface TemperatureLog {
+  id: number;
+  batchId: number;
+  batch?: InventoryBatch;
+  temperature: number;
+  recordedAt: string;
+  isAlert: boolean;
   createdAt: string;
 }

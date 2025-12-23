@@ -17,15 +17,24 @@ interface DashboardData {
     margin: number;
     period: string;
   };
-  itemsBelowSafetyStock?: Array<{
+  lowStockAlerts?: Array<{
     itemId: number;
     itemName: string;
     sku: string;
     currentStock: number;
-    safetyStock: number;
+    minStockLevel: number;
     difference: number;
   }>;
-  itemsBelowSafetyStockCount?: number;
+  lowStockAlertsCount?: number;
+  fullStockAlerts?: Array<{
+    itemId: number;
+    itemName: string;
+    sku: string;
+    currentStock: number;
+    maxStockLevel: number;
+    difference: number;
+  }>;
+  fullStockAlertsCount?: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -260,21 +269,21 @@ const Dashboard: React.FC = () => {
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Items Below Safety Stock */}
+        {/* Low Stock Alerts */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-base font-semibold text-gray-900">Items Below Safety Stock</h3>
-            {data.itemsBelowSafetyStockCount !== undefined && (
+            <h3 className="text-base font-semibold text-gray-900">Low Stock Alerts</h3>
+            {data.lowStockAlertsCount !== undefined && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                {data.itemsBelowSafetyStockCount} item{data.itemsBelowSafetyStockCount !== 1 ? 's' : ''}
+                {data.lowStockAlertsCount} item{data.lowStockAlertsCount !== 1 ? 's' : ''}
               </span>
             )}
           </div>
           
           <div className="p-4 flex-1">
-            {data.itemsBelowSafetyStock && data.itemsBelowSafetyStock.length > 0 ? (
+            {data.lowStockAlerts && data.lowStockAlerts.length > 0 ? (
               <div className="space-y-3">
-                {data.itemsBelowSafetyStock.map((item) => (
+                {data.lowStockAlerts.map((item) => (
                   <div 
                     key={item.itemId} 
                     className="flex items-start gap-3 p-3 rounded-lg bg-orange-50 border border-orange-100"
@@ -287,24 +296,24 @@ const Dashboard: React.FC = () => {
                       <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-600">
                         <span className="font-medium text-red-600">Current: {item.currentStock}</span>
                         <span className="text-gray-300">|</span>
-                        <span>Safety: {item.safetyStock}</span>
+                        <span>Min Level: {item.minStockLevel}</span>
                         <span className="text-gray-300">|</span>
                         <span className="font-medium text-blue-600">Need: {item.difference}</span>
                       </div>
                     </div>
                     <button 
-                      onClick={() => navigate('/procurement')}
+                      onClick={() => navigate('/inventory')}
                       className="text-xs font-medium text-primary hover:text-primary-hover underline underline-offset-2"
                     >
-                      Order
+                      View
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-6 text-gray-500">
-                <span className="material-symbols-outlined text-4xl text-gray-300 mb-2 block">package_2</span>
-                <p className="text-sm">All items are above safety stock</p>
+                <span className="material-symbols-outlined text-4xl text-gray-300 mb-2 block">check_circle</span>
+                <p className="text-sm">No low stock alerts</p>
               </div>
             )}
           </div>
@@ -319,49 +328,61 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Low Stock Alerts */}
+        {/* Full Stock Alerts */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-base font-semibold text-gray-900">Low Stock Alerts</h3>
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-base font-semibold text-gray-900">Full Stock Alerts</h3>
+            {data.fullStockAlertsCount !== undefined && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {data.fullStockAlertsCount} item{data.fullStockAlertsCount !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
           
-          <div className="p-4 flex-1 flex flex-col justify-center">
-            {data.lowStockItems > 0 ? (
-              <div className="rounded-lg border-l-4 border-primary bg-red-50 p-4 flex gap-3 items-start">
-                <div className="text-primary shrink-0">
-                  <span className="material-symbols-outlined text-xl">report_problem</span>
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900">
-                    {data.lowStockItems} item{data.lowStockItems !== 1 ? 's' : ''} running low on stock
-                  </h4>
-                  <p className="mt-1 text-xs text-gray-600">
-                    Immediate action recommended to prevent stock-out. Check inventory page for detailed breakdown.
-                  </p>
-                  <div className="mt-2">
+          <div className="p-4 flex-1">
+            {data.fullStockAlerts && data.fullStockAlerts.length > 0 ? (
+              <div className="space-y-3">
+                {data.fullStockAlerts.map((item) => (
+                  <div 
+                    key={item.itemId} 
+                    className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 border border-blue-100"
+                  >
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500 shrink-0">
+                      <span className="material-symbols-outlined text-lg">inventory_2</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-gray-900">{item.itemName}</h4>
+                      <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-600">
+                        <span className="font-medium text-blue-600">Current: {item.currentStock}</span>
+                        <span className="text-gray-300">|</span>
+                        <span>Max Level: {item.maxStockLevel}</span>
+                        <span className="text-gray-300">|</span>
+                        <span className="font-medium text-green-600">Over: {item.difference}</span>
+                      </div>
+                    </div>
                     <button 
                       onClick={() => navigate('/inventory')}
-                      className="text-xs font-semibold text-white bg-primary px-3 py-1.5 rounded shadow-sm hover:bg-primary-hover transition-colors"
+                      className="text-xs font-medium text-primary hover:text-primary-hover underline underline-offset-2"
                     >
-                      Review Alert
+                      View
                     </button>
                   </div>
-                </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-6 text-gray-500">
                 <span className="material-symbols-outlined text-4xl text-gray-300 mb-2 block">check_circle</span>
-                <p className="text-sm">No low stock alerts</p>
+                <p className="text-sm">No full stock alerts</p>
               </div>
             )}
           </div>
           
           <div className="p-3 bg-gray-50 rounded-b-lg border-t border-gray-200 text-center">
             <button 
-              onClick={() => navigate('/reports')}
+              onClick={() => navigate('/inventory')}
               className="text-xs text-gray-500 hover:text-primary transition-colors"
             >
-              System Health Status
+              View all inventory
             </button>
           </div>
         </div>

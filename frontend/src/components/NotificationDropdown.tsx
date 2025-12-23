@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, X, ShoppingCart, Package, AlertTriangle, ChevronRight } from 'lucide-react';
 import { enhancedApi } from '../services/enhanced-api';
 import { useNavigate } from 'react-router-dom';
@@ -6,13 +7,16 @@ import { useAuth } from '../context/useAuth';
 
 interface Notification {
   id: string;
-  type: 'po_approval' | 'low_stock' | 'stock_request' | 'out_of_stock';
+  type: 'po_approval' | 'low_stock' | 'stock_request' | 'out_of_stock' | 'expiry_warning' | 'below_min_threshold' | 'above_max_threshold' | 'auto_stock_request_created';
   title: string;
   message: string;
   priority: 'low' | 'medium' | 'high';
   link?: string;
   createdAt: string;
   count?: number;
+  itemId?: number;
+  itemName?: string;
+  sku?: string;
 }
 
 const NotificationDropdown: React.FC = () => {
@@ -20,6 +24,8 @@ const NotificationDropdown: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const navigate = useNavigate();
   const { isAuthenticated, token } = useAuth();
 
@@ -27,25 +33,36 @@ const NotificationDropdown: React.FC = () => {
     // Only fetch if user is authenticated and token exists
     if (isAuthenticated && token) {
       fetchNotifications();
-      // Refresh notifications every 30 seconds
+      // Refresh notifications every 7 seconds for real-time updates
       const interval = setInterval(() => {
         if (isAuthenticated && token) {
           fetchNotifications();
         }
-      }, 30000);
+      }, 7000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, token]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
+      // Tính toán vị trí dropdown từ button
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 8,
+          right: window.innerWidth - rect.right,
+        });
+      }
       document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      setDropdownPosition(null);
     }
 
     return () => {
@@ -92,12 +109,31 @@ const NotificationDropdown: React.FC = () => {
         return <Package className="w-5 h-5" />;
       case 'stock_request':
         return <AlertTriangle className="w-5 h-5" />;
+      case 'below_min_threshold':
+      case 'above_max_threshold':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'auto_stock_request_created':
+        return <Bell className="w-5 h-5" />;
+      case 'expiry_warning':
+        return <AlertTriangle className="w-5 h-5" />;
       default:
         return <Bell className="w-5 h-5" />;
     }
   };
 
-  const getNotificationColor = (priority: string) => {
+  const getNotificationColor = (type: string, priority: string) => {
+    // Special colors for specific notification types
+    if (type === 'below_min_threshold' || type === 'out_of_stock') {
+      return 'text-red-600 bg-red-50 border-red-200';
+    }
+    if (type === 'above_max_threshold') {
+      return 'text-blue-600 bg-blue-50 border-blue-200';
+    }
+    if (type === 'auto_stock_request_created') {
+      return 'text-purple-600 bg-purple-50 border-purple-200';
+    }
+    
+    // Default colors based on priority
     switch (priority) {
       case 'high':
         return 'text-red-600 bg-red-50 border-red-200';
@@ -111,22 +147,32 @@ const NotificationDropdown: React.FC = () => {
   const totalCount = notifications.reduce((sum, n) => sum + (n.count || 1), 0);
 
   return (
-    <div className="relative z-[9998]" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-500 hover:text-gray-700 transition-colors z-[9998]"
-        title="Notifications"
-      >
-        <span className="material-symbols-outlined">notifications</span>
-        {totalCount > 0 && (
-          <span className="absolute top-1 right-1 h-4 w-4 bg-primary text-[10px] font-bold text-white rounded-full flex items-center justify-center ring-2 ring-white">
-            {totalCount > 99 ? '99+' : totalCount}
-          </span>
-        )}
-      </button>
+    <>
+      <div className="relative z-50" ref={dropdownRef}>
+        <button
+          ref={buttonRef}
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative p-2 text-gray-500 hover:text-gray-700 transition-colors z-50"
+          title="Notifications"
+        >
+          <span className="material-symbols-outlined">notifications</span>
+          {totalCount > 0 && (
+            <span className="absolute top-1 right-1 h-4 w-4 bg-primary text-[10px] font-bold text-white rounded-full flex items-center justify-center ring-2 ring-white z-50">
+              {totalCount > 99 ? '99+' : totalCount}
+            </span>
+          )}
+        </button>
+      </div>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-[500px] flex flex-col">
+      {isOpen && dropdownPosition && createPortal(
+        <div 
+          className="fixed w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 max-h-[500px] flex flex-col"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            right: `${dropdownPosition.right}px`,
+            zIndex: 99999,
+          }}
+        >
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
             <button
@@ -151,10 +197,10 @@ const NotificationDropdown: React.FC = () => {
                   <button
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors border-l-4 ${getNotificationColor(notification.priority)}`}
+                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors border-l-4 ${getNotificationColor(notification.type, notification.priority)}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 mt-0.5 ${getNotificationColor(notification.priority).split(' ')[0]}`}>
+                      <div className={`flex-shrink-0 mt-0.5 ${getNotificationColor(notification.type, notification.priority).split(' ')[0]}`}>
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -197,8 +243,8 @@ const NotificationDropdown: React.FC = () => {
             </div>
           )}
         </div>
-      )}
-    </div>
+      , document.body)}
+    </>
   );
 };
 

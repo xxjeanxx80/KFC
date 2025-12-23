@@ -228,15 +228,6 @@ const Procurement: React.FC = () => {
                             Send
                           </button>
                         )}
-                        {/* PROCUREMENT_STAFF can edit PO (only if not approved, delivered, or cancelled) */}
-                        {userRole === 'PROCUREMENT_STAFF' && 
-                         po.status !== 'approved' && 
-                         po.status !== 'delivered' && 
-                         po.status !== 'cancelled' && (
-                          <button className="text-primary hover:text-blue-900" title="Edit">
-                            Edit
-                          </button>
-                        )}
                         {/* INVENTORY_STAFF can receive or reject receipt for PO in SENT status */}
                         {userRole === 'INVENTORY_STAFF' && po.status === 'sent' && (
                           <>

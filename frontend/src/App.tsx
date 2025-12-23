@@ -10,6 +10,7 @@ import Suppliers from './pages/Suppliers';
 import Sales from './pages/Sales';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
+import TemperatureMonitoring from './pages/TemperatureMonitoring';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
@@ -114,6 +115,16 @@ function App() {
                 element={
                   <RoleProtectedRoute allowedRoles={['ADMIN']}>
                     <Users />
+                  </RoleProtectedRoute>
+                } 
+              />
+              
+              {/* Temperature Monitoring - STORE_MANAGER, INVENTORY_STAFF, ADMIN */}
+              <Route 
+                path="temperature-monitoring" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['STORE_MANAGER', 'INVENTORY_STAFF', 'ADMIN']}>
+                    <TemperatureMonitoring />
                   </RoleProtectedRoute>
                 } 
               />

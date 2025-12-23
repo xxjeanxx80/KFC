@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Star, Edit, History, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import { enhancedApi } from '../services/enhanced-api';
-import type { Supplier, PurchaseOrder } from '../types';
+import type { Supplier, PurchaseOrder, SupplierItem } from '../types';
 import { Button, Badge } from '../components/ui';
 import SupplierModal from '../components/SupplierModal';
 import { useAuth } from '../context/useAuth';
@@ -14,9 +14,11 @@ const Suppliers: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | undefined>();
   // Track active tab and history for each supplier separately
-  const [activeTabs, setActiveTabs] = useState<Record<number, 'info' | 'history'>>({});
+  const [activeTabs, setActiveTabs] = useState<Record<number, 'info' | 'history' | 'items'>>({});
   const [supplierHistories, setSupplierHistories] = useState<Record<number, PurchaseOrder[]>>({});
+  const [supplierItems, setSupplierItems] = useState<Record<number, SupplierItem[]>>({});
   const [historyLoadingStates, setHistoryLoadingStates] = useState<Record<number, boolean>>({});
+  const [itemsLoadingStates, setItemsLoadingStates] = useState<Record<number, boolean>>({});
   const { user } = useAuth();
   const userRole = user ? (typeof user.role === 'string' ? user.role : user.role.code) : '';
 
@@ -88,10 +90,34 @@ const Suppliers: React.FC = () => {
     }
   };
 
-  const handleTabChange = (supplierId: number, tab: 'info' | 'history') => {
+  const handleTabChange = (supplierId: number, tab: 'info' | 'history' | 'items') => {
     setActiveTabs(prev => ({ ...prev, [supplierId]: tab }));
     if (tab === 'history' && !supplierHistories[supplierId]) {
       handleViewHistory(supplierId);
+    }
+    if (tab === 'items' && !supplierItems[supplierId]) {
+      handleViewItems(supplierId);
+    }
+  };
+
+  const handleViewItems = async (supplierId: number) => {
+    // Set active tab for this specific supplier
+    setActiveTabs(prev => ({ ...prev, [supplierId]: 'items' }));
+    
+    // If items already loaded, don't fetch again
+    if (supplierItems[supplierId]) {
+      return;
+    }
+    
+    setItemsLoadingStates(prev => ({ ...prev, [supplierId]: true }));
+    try {
+      const response = await enhancedApi.get<SupplierItem[]>(`/suppliers/${supplierId}/items`, {}, { maxRetries: 2, retryDelay: 1000 });
+      setSupplierItems(prev => ({ ...prev, [supplierId]: response.data || [] }));
+    } catch (error: unknown) {
+      console.error('Failed to fetch supplier items:', error);
+      setSupplierItems(prev => ({ ...prev, [supplierId]: [] }));
+    } finally {
+      setItemsLoadingStates(prev => ({ ...prev, [supplierId]: false }));
     }
   };
 
@@ -155,6 +181,12 @@ const Suppliers: React.FC = () => {
                     <span className="text-gray-400">Lead Time:</span>
                     <div>{supplier.leadTimeDays} days</div>
                   </div>
+                  {supplier.address && (
+                    <div className="col-span-2">
+                      <span className="text-gray-400">Address:</span>
+                      <div>{supplier.address}</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -180,6 +212,16 @@ const Suppliers: React.FC = () => {
                     onClick={() => handleTabChange(supplier.id, 'history')}
                   >
                     History
+                  </button>
+                  <button
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTabs[supplier.id] === 'items'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                    onClick={() => handleTabChange(supplier.id, 'items')}
+                  >
+                    Items
                   </button>
                 </nav>
               </div>
@@ -211,6 +253,55 @@ const Suppliers: React.FC = () => {
                         View History
                       </Button>
                     </div>
+                  </div>
+                ) : activeTabs[supplier.id] === 'items' ? (
+                  <div className="space-y-4">
+                    {itemsLoadingStates[supplier.id] ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                        <p className="text-gray-500 mt-2">Loading items...</p>
+                      </div>
+                    ) : (supplierItems[supplier.id] || []).length === 0 ? (
+                      <div className="text-center py-8">
+                        <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500">No items found for this supplier</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {(supplierItems[supplier.id] || []).map((supplierItem) => (
+                          <div key={supplierItem.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{supplierItem.item?.itemName || 'N/A'}</h4>
+                                <p className="text-sm text-gray-500">{supplierItem.item?.sku || 'N/A'}</p>
+                              </div>
+                              {supplierItem.isPreferred && (
+                                <Badge variant="success">Preferred</Badge>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-500">Unit Price:</span>
+                                <div className="font-medium">
+                                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: supplierItem.currency || 'VND' }).format(supplierItem.unitPrice)}
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Min Order Qty:</span>
+                                <div className="font-medium">{supplierItem.minOrderQty}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Lead Time:</span>
+                                <div className="font-medium">
+                                  {supplierItem.leadTimeDays ? `${supplierItem.leadTimeDays} days` : 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { stockRequestsService, itemsService, storesService } from '../services/api-services';
 import { enhancedApi } from '../services/enhanced-api';
@@ -63,11 +64,7 @@ const StockRequests: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; bg: string; text: string }> = {
       'requested': { label: 'REQUESTED', bg: 'bg-blue-100', text: 'text-blue-800' },
-      'pending_approval': { label: 'PENDING APPROVAL', bg: 'bg-yellow-100', text: 'text-yellow-800' },
-      'approved': { label: 'APPROVED', bg: 'bg-green-100', text: 'text-green-800' },
-      'rejected': { label: 'REJECTED', bg: 'bg-red-100', text: 'text-red-800' },
       'po_generated': { label: 'PO GENERATED', bg: 'bg-purple-100', text: 'text-purple-800' },
-      'fulfilled': { label: 'FULFILLED', bg: 'bg-gray-100', text: 'text-gray-800' },
       'cancelled': { label: 'CANCELLED', bg: 'bg-gray-100', text: 'text-gray-800' },
     };
     
@@ -103,7 +100,7 @@ const StockRequests: React.FC = () => {
 
   const handleGeneratePOConfirm = () => {
     if (selectedRequestIds.length === 0) {
-      alert('Vui lòng chọn ít nhất một Stock Request để tạo PO.');
+      alert('Please select at least one Stock Request to create PO.');
       return;
     }
 
@@ -113,7 +110,7 @@ const StockRequests: React.FC = () => {
     );
 
     if (selectedRequests.length === 0) {
-      alert('Không có Stock Request hợp lệ nào được chọn.');
+      alert('No valid Stock Requests selected.');
       return;
     }
 
@@ -129,11 +126,11 @@ const StockRequests: React.FC = () => {
 
   const handleCancelRequests = async () => {
     if (selectedRequestIds.length === 0) {
-      alert('Vui lòng chọn ít nhất một Stock Request để hủy.');
+      alert('Please select at least one Stock Request to cancel.');
       return;
     }
 
-    if (!confirm(`Bạn có chắc chắn muốn hủy ${selectedRequestIds.length} Stock Request(s) đã chọn?`)) {
+    if (!confirm(`Are you sure you want to cancel ${selectedRequestIds.length} selected Stock Request(s)?`)) {
       return;
     }
 
@@ -233,11 +230,7 @@ const StockRequests: React.FC = () => {
           >
             <option value="all">All Statuses</option>
             <option value="requested">Requested</option>
-            <option value="pending_approval">Pending Approval</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
             <option value="po_generated">PO Generated</option>
-            <option value="fulfilled">Fulfilled</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -252,8 +245,6 @@ const StockRequests: React.FC = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested By</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved At</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -262,11 +253,11 @@ const StockRequests: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500">Loading requests...</td>
+                  <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">Loading requests...</td>
                 </tr>
               ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500">No stock requests found.</td>
+                  <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">No stock requests found.</td>
                 </tr>
               ) : (
                 filteredRequests.map((request) => (
@@ -284,13 +275,7 @@ const StockRequests: React.FC = () => {
                       {getStatusBadge(request.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      User #{request.requestedBy || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.approvedBy ? `User #${request.approvedBy}` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.approvedAt ? format(new Date(request.approvedAt), 'MMM d, yyyy HH:mm') : '-'}
+                      {request.notes && request.notes.includes('Auto-generated') ? 'Auto by Stock Alert' : `User #${request.requestedBy || 'N/A'}`}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {request.poId ? (
@@ -311,17 +296,40 @@ const StockRequests: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
+                        {/* PROCUREMENT_STAFF can cancel or generate PO from stock requests */}
+                        {userRole === 'PROCUREMENT_STAFF' && request.status === 'requested' && (
+                          <>
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Are you sure you want to cancel Stock Request #${request.id}?`)) {
+                                  try {
+                                    await stockRequestsService.update(request.id, { status: 'cancelled' });
+                                    await fetchRequests();
+                                    alert('Stock request cancelled successfully.');
+                                  } catch (error) {
+                                    console.error('Failed to cancel stock request:', error);
+                                    alert('Failed to cancel stock request.');
+                                  }
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                              title="Cancel"
+                            >
+                              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: '"FILL" 0' }}>
+                                cancel
+                              </span>
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => {
                             setSelectedRequestDetail(request);
                             setIsDetailModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                          title="Xem chi tiết"
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          title="View Details"
                         >
-                          <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: '"FILL" 0' }}>
-                            visibility
-                          </span>
+                          <Eye className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -648,7 +656,7 @@ const GeneratePOModal: React.FC<GeneratePOModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Chọn Stock Requests để tạo PO</h2>
+          <h2 className="text-xl font-bold text-gray-900">Select Stock Requests to Create PO</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -661,7 +669,7 @@ const GeneratePOModal: React.FC<GeneratePOModalProps> = ({
 
         {requestedRequests.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">Không có Stock Request nào ở trạng thái REQUESTED.</p>
+            <p className="text-gray-500">No Stock Requests with REQUESTED status.</p>
           </div>
         ) : (
           <>
@@ -671,10 +679,10 @@ const GeneratePOModal: React.FC<GeneratePOModalProps> = ({
                   onClick={onSelectAll}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  {allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                  {allSelected ? 'Deselect All' : 'Select All'}
                 </button>
                 <span className="text-sm text-gray-600">
-                  Đã chọn: {selectedRequestIds.length} / {requestedRequests.length}
+                  Selected: {selectedRequestIds.length} / {requestedRequests.length}
                 </span>
               </div>
             </div>
@@ -739,7 +747,7 @@ const GeneratePOModal: React.FC<GeneratePOModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Đóng
+                Close
               </button>
               {selectedRequestIds.length > 0 && (
                 <>
@@ -748,14 +756,14 @@ const GeneratePOModal: React.FC<GeneratePOModalProps> = ({
                     onClick={onCancelRequests}
                     className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
                   >
-                    Hủy ({selectedRequestIds.length})
+                    Cancel ({selectedRequestIds.length})
                   </button>
                   <button
                     type="button"
                     onClick={onGeneratePO}
                     className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
                   >
-                    Tạo PO ({selectedRequestIds.length})
+                    Create PO ({selectedRequestIds.length})
                   </button>
                 </>
               )}
@@ -816,7 +824,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
       setSuppliers(response.data);
     } catch (error) {
       console.error('Failed to fetch suppliers:', error);
-      alert('Không thể tải danh sách suppliers.');
+      alert('Failed to load suppliers list.');
     }
   };
 
@@ -852,22 +860,22 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.expectedDeliveryDate) {
-      newErrors.expectedDeliveryDate = 'Ngày giao hàng dự kiến là bắt buộc';
+      newErrors.expectedDeliveryDate = 'Expected delivery date is required';
     } else {
       const expectedDate = new Date(formData.expectedDeliveryDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (expectedDate <= today) {
-        newErrors.expectedDeliveryDate = 'Ngày giao hàng dự kiến phải là ngày trong tương lai';
+        newErrors.expectedDeliveryDate = 'Expected delivery date must be a future date';
       }
     }
 
     poItems.forEach((item, index) => {
       if (!item.supplierId) {
-        newErrors[`supplier_${index}`] = 'Vui lòng chọn supplier';
+        newErrors[`supplier_${index}`] = 'Please select a supplier';
       }
       if (!item.unitPrice || parseFloat(item.unitPrice) <= 0) {
-        newErrors[`unitPrice_${index}`] = 'Giá phải lớn hơn 0';
+        newErrors[`unitPrice_${index}`] = 'Price must be greater than 0';
       }
     });
 
@@ -964,11 +972,11 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
         results.push({ poId: po.id, requestIds: requestIdsForPO });
       }
 
-      alert(`Đã tạo thành công ${results.length} đơn mua hàng (PO) từ các Stock Requests đã chọn.`);
+      alert(`Successfully created ${results.length} purchase order(s) (PO) from selected Stock Requests.`);
       onSuccess();
     } catch (error: unknown) {
       console.error('Failed to create PO:', error);
-      let errorMessage = 'Không thể tạo PO. Vui lòng thử lại.';
+      let errorMessage = 'Failed to create PO. Please try again.';
       if (error && typeof error === 'object' && 'response' in error) {
         const httpError = error as { response?: { data?: { message?: string } } };
         if (httpError.response?.data?.message) {
@@ -991,7 +999,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Tạo Purchase Order từ Stock Requests</h2>
+          <h2 className="text-xl font-bold text-gray-900">Create Purchase Order from Stock Requests</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -1004,7 +1012,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Danh sách Items</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Items List</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -1034,7 +1042,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
                               errors[`supplier_${index}`] ? 'border-red-500' : 'border-gray-300'
                             }`}
                           >
-                            <option value="">Chọn Supplier</option>
+                            <option value="">Select Supplier</option>
                             {suppliers.map((supplier) => (
                               <option key={supplier.id} value={supplier.id}>
                                 {supplier.name}
@@ -1075,7 +1083,7 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ngày giao hàng dự kiến <span className="text-red-500">*</span>
+                Expected Delivery Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -1091,13 +1099,13 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <input
                 type="text"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                placeholder="Ghi chú (tùy chọn)"
+                placeholder="Notes (optional)"
               />
             </div>
           </div>
@@ -1108,14 +1116,14 @@ const CreatePOFromRequestsModal: React.FC<CreatePOFromRequestsModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Đang tạo...' : 'Tạo PO'}
+              {loading ? 'Creating...' : 'Create PO'}
             </button>
           </div>
         </form>
@@ -1141,7 +1149,7 @@ const StockRequestDetailModal: React.FC<StockRequestDetailModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Chi tiết Stock Request #{request.id}</h2>
+          <h2 className="text-xl font-bold text-gray-900">Stock Request Details #{request.id}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -1161,10 +1169,8 @@ const StockRequestDetailModal: React.FC<StockRequestDetailModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                request.status === 'approved' ? 'bg-green-100 text-green-800' :
                 request.status === 'requested' ? 'bg-blue-100 text-blue-800' :
                 request.status === 'po_generated' ? 'bg-purple-100 text-purple-800' :
-                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
                 request.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
@@ -1196,19 +1202,11 @@ const StockRequestDetailModal: React.FC<StockRequestDetailModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
-              <p className="text-sm text-gray-900">User #{request.requestedBy || 'N/A'}</p>
+              <p className="text-sm text-gray-900">{request.notes && request.notes.includes('Auto-generated') ? 'Auto by Stock Alert' : `User #${request.requestedBy || 'N/A'}`}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Created At</label>
               <p className="text-sm text-gray-900">{format(new Date(request.createdAt), 'MMM d, yyyy HH:mm')}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
-              <p className="text-sm text-gray-900">{request.approvedBy ? `User #${request.approvedBy}` : '-'}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Approved At</label>
-              <p className="text-sm text-gray-900">{request.approvedAt ? format(new Date(request.approvedAt), 'MMM d, yyyy HH:mm') : '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PO ID</label>
@@ -1242,7 +1240,7 @@ const StockRequestDetailModal: React.FC<StockRequestDetailModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Đóng
+            Close
           </button>
         </div>
       </div>

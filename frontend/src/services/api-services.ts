@@ -8,7 +8,8 @@ import type {
   StockRequest,
   GoodsReceipt,
   SalesTransaction,
-  InventoryTransaction
+  InventoryTransaction,
+  TemperatureLog
 } from '../types';
 
 // ==================== AUTH ====================
@@ -262,8 +263,8 @@ export const stockRequestsService = {
     return response.data;
   },
 
-  approve: async (id: number, approverId: number): Promise<StockRequest> => {
-    const response = await enhancedApi.post<StockRequest>(`/stock-requests/${id}/approve`, { approverId });
+  update: async (id: number, data: { poId?: number; status?: 'requested' | 'po_generated' | 'cancelled' }): Promise<StockRequest> => {
+    const response = await enhancedApi.patch<StockRequest>(`/stock-requests/${id}`, data);
     return response.data;
   },
 
@@ -286,6 +287,15 @@ export const stockRequestsService = {
   autoReplenish: async (storeId?: number): Promise<Array<{ itemId: number; stockRequestId?: number; poId?: number }>> => {
     const url = storeId ? `/stock-requests/auto-replenish?storeId=${storeId}` : '/stock-requests/auto-replenish';
     const response = await enhancedApi.post<Array<{ itemId: number; stockRequestId?: number; poId?: number }>>(url, {});
+    return response.data;
+  },
+
+  expressOrder: async (itemId: number, storeId: number, requestedQty: number): Promise<PurchaseOrder> => {
+    const response = await enhancedApi.post<PurchaseOrder>('/stock-requests/express-order', {
+      itemId,
+      storeId,
+      requestedQty,
+    });
     return response.data;
   },
 };
@@ -428,6 +438,48 @@ export const inventoryTransactionsService = {
 
   getById: async (id: number): Promise<InventoryTransaction> => {
     const response = await enhancedApi.get<InventoryTransaction>(`/inventory-transactions/${id}`);
+    return response.data;
+  },
+};
+
+// ==================== ADMIN ====================
+export const adminService = {
+  adjustInventory: async (data: {
+    itemId: number;
+    storeId: number;
+    batchNo: string;
+    quantityChange: number;
+    expiryDate?: string;
+    notes?: string;
+  }): Promise<{ success: boolean; message: string; data: InventoryBatch }> => {
+    const response = await enhancedApi.post<{ success: boolean; message: string; data: InventoryBatch }>(
+      '/admin/inventory/adjust',
+      data
+    );
+    return response.data;
+  },
+
+  setTemperature: async (data: {
+    batchId: number;
+    temperature: number;
+  }): Promise<{ success: boolean; message: string; data: InventoryBatch }> => {
+    const response = await enhancedApi.post<{ success: boolean; message: string; data: InventoryBatch }>(
+      '/admin/temperature/set',
+      data
+    );
+    return response.data;
+  },
+};
+
+// ==================== TEMPERATURE ====================
+export const temperatureService = {
+  getBatchesWithAlerts: async (): Promise<InventoryBatch[]> => {
+    const response = await enhancedApi.get<InventoryBatch[]>('/temperature/alerts');
+    return response.data;
+  },
+
+  checkAlerts: async (): Promise<{ message: string }> => {
+    const response = await enhancedApi.post<{ message: string }>('/temperature/check', {});
     return response.data;
   },
 };

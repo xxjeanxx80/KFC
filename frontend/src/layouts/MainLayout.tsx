@@ -17,6 +17,7 @@ const MainLayout: React.FC = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['STORE_MANAGER', 'PROCUREMENT_STAFF', 'ADMIN'] },
     { path: '/inventory', label: 'Inventory', icon: 'inventory_2', roles: ['STORE_MANAGER', 'INVENTORY_STAFF', 'ADMIN'] },
+    { path: '/temperature-monitoring', label: 'Temperature Monitoring', icon: 'thermostat', roles: ['STORE_MANAGER', 'INVENTORY_STAFF', 'ADMIN'] },
     { path: '/inventory-transactions', label: 'Inventory Transactions', icon: 'history', roles: ['STORE_MANAGER', 'INVENTORY_STAFF', 'ADMIN'] },
     { path: '/stock-requests', label: 'Stock Requests', icon: 'assignment', roles: ['STORE_MANAGER', 'PROCUREMENT_STAFF', 'ADMIN'] },
     { path: '/procurement', label: 'Procurement', icon: 'shopping_cart', roles: ['STORE_MANAGER', 'PROCUREMENT_STAFF', 'INVENTORY_STAFF', 'ADMIN'] },
@@ -85,12 +86,12 @@ const MainLayout: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
         {/* Header */}
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 z-10">
+        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 relative z-10">
           <h2 className="text-xl font-semibold text-gray-800">
             {filteredNavItems.find(item => item.path === location.pathname)?.label || 'Dashboard Overview'}
           </h2>
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 relative z-10">
             <NotificationDropdown />
             
             <div className="flex items-center gap-3 pl-6 border-l border-gray-200">

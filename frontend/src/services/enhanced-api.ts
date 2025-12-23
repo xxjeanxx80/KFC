@@ -36,17 +36,11 @@ class EnhancedApiService {
       (config) => {
         // Tự động thêm token từ localStorage nếu có
         const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-        if (token && !config.headers['Authorization']) {
+        
+        if (token) {
           config.headers['Authorization'] = `Bearer ${token}`;
         }
-
-        this.logger.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`, {
-          url: config.url,
-          method: config.method,
-          data: config.data,
-          params: config.params,
-          timestamp: new Date().toISOString()
-        });
+        
         return config;
       },
       (error) => {
