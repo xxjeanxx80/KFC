@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, Thermometer, CheckCircle, XCircle } from 'lucide-react';
 import { inventoryService, temperatureService } from '../services/api-services';
-import { adminService } from '../services/api-services';
-import type { InventoryBatch, Item } from '../types';
+import type { InventoryBatch } from '../types';
 import { useAuth } from '../context/useAuth';
 import AdminTemperatureModal from '../components/AdminTemperatureModal';
 
@@ -88,13 +87,6 @@ const TemperatureMonitoring: React.FC = () => {
     averageTemp: batches.length > 0
       ? batches.reduce((sum, b) => sum + (b.temperature || 0), 0) / batches.length
       : 0,
-  };
-
-  const handleSetTemperature = async () => {
-    if (selectedBatch) {
-      setSelectedBatch(selectedBatch);
-      setIsAdminModalOpen(true);
-    }
   };
 
   const handleAdminModalClose = () => {

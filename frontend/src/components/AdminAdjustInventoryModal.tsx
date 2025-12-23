@@ -60,7 +60,7 @@ const AdminAdjustInventoryModal: React.FC<AdminAdjustInventoryModalProps> = ({
   const fetchStores = async () => {
     try {
       const allStores = await storesService.getAll();
-      setStores(allStores);
+      setStores(allStores as Store[]);
     } catch (error) {
       console.error('Failed to fetch stores:', error);
     }

@@ -8,8 +8,7 @@ import type {
   StockRequest,
   GoodsReceipt,
   SalesTransaction,
-  InventoryTransaction,
-  TemperatureLog
+  InventoryTransaction
 } from '../types';
 
 // ==================== AUTH ====================

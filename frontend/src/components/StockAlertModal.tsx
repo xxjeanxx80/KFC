@@ -30,7 +30,6 @@ const StockAlertModal: React.FC<StockAlertModalProps> = ({
   currentStock,
   groupedItems
 }) => {
-  const { user } = useAuth();
   const [settings, setSettings] = useState<AlertSettings>({
     minThreshold: 10,
     maxThreshold: 100,
@@ -107,7 +106,7 @@ const StockAlertModal: React.FC<StockAlertModalProps> = ({
       await itemsService.update(targetItemId, {
         minStockLevel: settings.minThreshold,
         maxStockLevel: settings.maxThreshold,
-        safetyStock: settings.safetyStock || null,
+        safetyStock: settings.safetyStock || undefined,
       });
       
       alert('Stock alert settings saved successfully!');

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Eye, Settings } from 'lucide-react';
-import { format } from 'date-fns';
 import { enhancedApi } from '../services/enhanced-api';
 import { stockRequestsService } from '../services/api-services';
 import type { InventoryBatch, Item } from '../types';
@@ -19,7 +18,6 @@ interface GroupedInventoryItem {
 }
 
 const Inventory: React.FC = () => {
-  const [batches, setBatches] = useState<InventoryBatch[]>([]);
   const [groupedItems, setGroupedItems] = useState<GroupedInventoryItem[]>([]);
   const [filteredGroupedItems, setFilteredGroupedItems] = useState<GroupedInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,8 +91,8 @@ const Inventory: React.FC = () => {
   const fetchInventory = async () => {
     try {
       const response = await enhancedApi.get<InventoryBatch[]>('/inventory-batches', {}, { maxRetries: 2, retryDelay: 1000 });
-      setBatches(response.data);
-      const grouped = groupBatchesBySKU(response.data);
+      const batches = response.data;
+      const grouped = groupBatchesBySKU(batches);
       setGroupedItems(grouped);
       setFilteredGroupedItems(grouped);
     } catch (error) {
@@ -160,11 +158,6 @@ const Inventory: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleAdjustStock = (batch: InventoryBatch) => {
-    setSelectedBatch(batch);
-    setIsModalOpen(true);
-  };
-
   const handleModalClose = () => {
     setIsModalOpen(false);
     setSelectedBatch(undefined);
@@ -172,15 +165,6 @@ const Inventory: React.FC = () => {
 
   const handleSaveBatch = () => {
     fetchInventory();
-  };
-
-  const handleStockAlert = (batch: InventoryBatch) => {
-    setSelectedItemForAlert({
-      id: batch.item.id,
-      name: batch.item.itemName,
-      stock: batch.quantityOnHand
-    });
-    setIsStockAlertModalOpen(true);
   };
 
   const handleStockAlertClose = () => {
