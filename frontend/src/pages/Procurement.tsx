@@ -234,30 +234,30 @@ const Procurement: React.FC = () => {
                             <button 
                               type="button"
                               className="text-green-600 hover:text-green-900 px-3 py-1.5 rounded text-xs font-medium border border-green-300 hover:bg-green-50 transition-colors cursor-pointer whitespace-nowrap" 
-                              title="Nhận hàng"
+                              title="Receive Goods"
                               onClick={async (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                if (confirm('Bạn có chắc chắn muốn nhận hàng này?')) {
+                                if (confirm('Are you sure you want to receive this order?')) {
                                   try {
                                     await procurementService.receive(po.id);
-                                    alert('Đã nhận hàng thành công. Vui lòng điền thông tin GRN.');
-                                    // Fetch lại PO với đầy đủ items để có thông tin mới nhất
+                                    alert('Order received successfully. Please fill in the GRN information.');
+                                    // Fetch PO again with full items to get latest information
                                     const updatedPO = await procurementService.getById(po.id);
-                                    // Kiểm tra xem PO có items không
+                                    // Check if PO has items
                                     if (!updatedPO.items || updatedPO.items.length === 0) {
-                                      console.error('PO không có items sau khi receive:', updatedPO);
-                                      alert('Lỗi: Purchase Order không có items. Vui lòng thử lại.');
+                                      console.error('PO has no items after receive:', updatedPO);
+                                      alert('Error: Purchase Order has no items. Please try again.');
                                       fetchOrders();
                                       return;
                                     }
-                                    console.log('PO sau khi receive:', updatedPO);
+                                    console.log('PO after receive:', updatedPO);
                                     setSelectedPOForGRN(updatedPO);
                                     setIsGoodsReceiptModalOpen(true);
                                     fetchOrders();
                                   } catch (error: unknown) {
                                     console.error('Failed to receive PO:', error);
-                                    let errorMessage = 'Không thể nhận hàng.';
+                                    let errorMessage = 'Unable to receive order.';
                                     if (error && typeof error === 'object' && 'response' in error) {
                                       const httpError = error as { response?: { data?: { message?: string } } };
                                       if (httpError.response?.data?.message) {
@@ -269,24 +269,24 @@ const Procurement: React.FC = () => {
                                 }
                               }}
                             >
-                              Nhận hàng
+                              Receive Goods
                             </button>
                             <button 
                               type="button"
                               className="text-red-600 hover:text-red-900 px-3 py-1.5 rounded text-xs font-medium border border-red-300 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap" 
-                              title="Không nhận hàng"
+                              title="Reject Receipt"
                               onClick={async (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                const reason = prompt('Nhập lý do không nhận hàng:');
+                                const reason = prompt('Enter reason for rejecting receipt:');
                                 if (reason && reason.trim()) {
                                   try {
                                     await procurementService.rejectReceipt(po.id, reason.trim());
-                                    alert('Đã từ chối nhận hàng thành công.');
+                                    alert('Receipt rejected successfully.');
                                     fetchOrders();
                                   } catch (error: unknown) {
                                     console.error('Failed to reject receipt:', error);
-                                    let errorMessage = 'Không thể từ chối nhận hàng.';
+                                    let errorMessage = 'Unable to reject receipt.';
                                     if (error && typeof error === 'object' && 'response' in error) {
                                       const httpError = error as { response?: { data?: { message?: string } } };
                                       if (httpError.response?.data?.message) {
@@ -296,11 +296,11 @@ const Procurement: React.FC = () => {
                                     alert(errorMessage);
                                   }
                                 } else if (reason !== null) {
-                                  alert('Lý do không thể để trống.');
+                                  alert('Reason cannot be empty.');
                                 }
                               }}
                             >
-                              Không nhận
+                              Reject
                             </button>
                           </>
                         )}
@@ -309,7 +309,7 @@ const Procurement: React.FC = () => {
                           <button 
                             type="button"
                             className="text-blue-600 hover:text-blue-900 px-3 py-1.5 rounded text-xs font-medium border border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer whitespace-nowrap" 
-                            title="Tạo GRN"
+                            title="Create GRN"
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -319,11 +319,11 @@ const Procurement: React.FC = () => {
                                 setIsGoodsReceiptModalOpen(true);
                               } catch (error) {
                                 console.error('Failed to fetch PO details:', error);
-                                alert('Không thể tải thông tin PO.');
+                                alert('Unable to load PO information.');
                               }
                             }}
                           >
-                            Tạo GRN
+                            Create GRN
                           </button>
                         )}
                         <button 

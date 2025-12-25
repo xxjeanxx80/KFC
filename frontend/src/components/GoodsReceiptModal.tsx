@@ -41,22 +41,22 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
     if (isOpen && purchaseOrder) {
       console.log('Purchase Order received in modal:', purchaseOrder);
       
-      // Kiểm tra xem PO có items không
+      // Check if PO has items
       if (!purchaseOrder.items || purchaseOrder.items.length === 0) {
-        console.error('Purchase Order không có items:', purchaseOrder);
-        alert('Purchase Order không có items. Vui lòng kiểm tra lại.');
+        console.error('Purchase Order has no items:', purchaseOrder);
+        alert('Purchase Order has no items. Please check again.');
         onClose();
         return;
       }
 
-      // Hàm tạo batch number từ SKU và ngày hiện tại
+      // Function to generate batch number from SKU and current date
       const generateBatchNo = (sku: string): string => {
         if (!sku || sku.length === 0) {
           return '';
         }
-        // Lấy 3 ký tự đầu của SKU (uppercase)
+        // Get first 3 characters of SKU (uppercase)
         const skuPrefix = sku.substring(0, 3).toUpperCase();
-        // Format ngày hiện tại: ddMMyyyy
+        // Format current date: ddMMyyyy
         const today = new Date();
         const day = String(today.getDate()).padStart(2, '0');
         const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -66,14 +66,14 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
         return `${skuPrefix}-${dateStr}`;
       };
 
-      // Khởi tạo GRN items từ PO items
+      // Initialize GRN items from PO items
       const items: GRNItem[] = purchaseOrder.items.map((poItem: PurchaseOrderItem) => {
-        // Đảm bảo có itemId và quantity
+        // Ensure itemId and quantity exist
         if (!poItem.itemId || !poItem.quantity) {
-          console.error('PO Item thiếu thông tin:', poItem);
+          console.error('PO Item missing information:', poItem);
         }
         
-        // Lấy tên item từ relation hoặc fallback
+        // Get item name from relation or fallback
         let itemName = `Item ${poItem.itemId}`;
         let sku = '';
         if (poItem.item) {
@@ -81,7 +81,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
           sku = poItem.item.sku || '';
         }
         
-        // Tự động generate batch number từ SKU
+        // Auto-generate batch number from SKU
         const batchNo = generateBatchNo(sku);
         
         return {
@@ -90,7 +90,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
           orderedQty: poItem.quantity,
           batchNo: batchNo,
           expiryDate: '',
-          receivedQty: poItem.quantity, // Mặc định nhận đủ số lượng đã đặt
+          receivedQty: poItem.quantity, // Default to receive full ordered quantity
           temperature: '',
         };
       });
@@ -102,7 +102,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
       setErrors({});
     } else if (isOpen && !purchaseOrder) {
       console.error('Purchase Order is null or undefined');
-      alert('Không có thông tin Purchase Order. Vui lòng thử lại.');
+      alert('No Purchase Order information. Please try again.');
       onClose();
     }
   }, [isOpen, purchaseOrder, onClose]);
@@ -111,21 +111,21 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!receivedDate) {
-      newErrors.receivedDate = 'Ngày nhận hàng là bắt buộc';
+      newErrors.receivedDate = 'Received date is required';
     }
 
     grnItems.forEach((item, index) => {
       if (!item.batchNo || !item.batchNo.trim()) {
-        newErrors[`batchNo_${index}`] = 'Số lô là bắt buộc';
+        newErrors[`batchNo_${index}`] = 'Batch number is required';
       }
       if (!item.expiryDate) {
-        newErrors[`expiryDate_${index}`] = 'Ngày hết hạn là bắt buộc';
+        newErrors[`expiryDate_${index}`] = 'Expiry date is required';
       }
       if (!item.receivedQty || item.receivedQty <= 0) {
-        newErrors[`receivedQty_${index}`] = 'Số lượng nhận phải lớn hơn 0';
+        newErrors[`receivedQty_${index}`] = 'Received quantity must be greater than 0';
       }
       if (item.receivedQty > item.orderedQty) {
-        newErrors[`receivedQty_${index}`] = 'Số lượng nhận không được vượt quá số lượng đặt hàng';
+        newErrors[`receivedQty_${index}`] = 'Received quantity cannot exceed ordered quantity';
       }
     });
 
@@ -140,7 +140,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
       [field]: value,
     };
     setGrnItems(updatedItems);
-    // Xóa lỗi của field này khi user thay đổi
+    // Clear error for this field when user changes it
     const errorKey = `${field}_${index}`;
     if (errors[errorKey]) {
       const newErrors = { ...errors };
@@ -157,7 +157,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
     }
 
     if (!user?.id) {
-      alert('Không thể xác định người dùng. Vui lòng đăng nhập lại.');
+      alert('Unable to identify user. Please log in again.');
       return;
     }
 
@@ -178,13 +178,13 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
       };
 
       await goodsReceiptsService.create(grnData);
-      alert('Tạo GRN thành công! Hệ thống đã tự động tạo inventory batches và transactions.');
+      alert('GRN created successfully! The system has automatically created inventory batches and transactions.');
       onSuccess();
     } catch (error: unknown) {
       console.error('Failed to create GRN:', error);
       const httpError = error as { response?: { data?: { message?: string } } };
       const errorMessage =
-        httpError.response?.data?.message || 'Không thể tạo GRN. Vui lòng thử lại.';
+        httpError.response?.data?.message || 'Unable to create GRN. Please try again.';
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -197,7 +197,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Tạo Goods Receipt Note (GRN)</h2>
+          <h2 className="text-xl font-semibold">Create Goods Receipt Note (GRN)</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -207,9 +207,9 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
           </button>
         </div>
 
-        {/* Thông tin PO */}
+        {/* PO Information */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold mb-2">Thông tin Purchase Order</h3>
+          <h3 className="font-semibold mb-2">Purchase Order Information</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="font-medium">PO Number:</span> {purchaseOrder.poNumber}
@@ -230,10 +230,10 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Ngày nhận hàng */}
+          {/* Received Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ngày nhận hàng <span className="text-red-500">*</span>
+              Received Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -256,30 +256,30 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
             )}
           </div>
 
-          {/* Bảng items */}
+          {/* Items Table */}
           <div>
-            <h3 className="font-semibold mb-2">Chi tiết hàng nhận</h3>
+            <h3 className="font-semibold mb-2">Received Items Details</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
-                      Mặt hàng
+                      Item
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
-                      Số lượng đặt
+                      Ordered Qty
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
-                      Số lô <span className="text-red-500">*</span>
+                      Batch No <span className="text-red-500">*</span>
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
-                      Ngày hết hạn <span className="text-red-500">*</span>
+                      Expiry Date <span className="text-red-500">*</span>
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
-                      Số lượng nhận <span className="text-red-500">*</span>
+                      Received Qty <span className="text-red-500">*</span>
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
-                      Nhiệt độ (°C)
+                      Temperature (°C)
                     </th>
                   </tr>
                 </thead>
@@ -287,7 +287,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
                   {grnItems.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-4 text-center text-sm text-gray-500">
-                        Không có items trong Purchase Order. Vui lòng kiểm tra lại.
+                        No items in Purchase Order. Please check again.
                       </td>
                     </tr>
                   ) : (
@@ -369,7 +369,7 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
                             onChange={(e) =>
                               handleItemChange(index, 'temperature', e.target.value)
                             }
-                            placeholder="Nhiệt độ"
+                            placeholder="Temperature"
                             className="w-full px-2 py-1 border border-gray-300 rounded"
                           />
                         </td>
@@ -389,10 +389,10 @@ const GoodsReceiptModal: React.FC<GoodsReceiptModalProps> = ({
               onClick={onClose}
               disabled={loading}
             >
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'Đang tạo...' : 'Tạo GRN'}
+              {loading ? 'Creating...' : 'Create GRN'}
             </Button>
           </div>
         </form>

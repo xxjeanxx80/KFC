@@ -141,9 +141,9 @@ export const procurementService = {
   receive: async (id: number): Promise<PurchaseOrder> => {
     const response = await enhancedApi.post<{ success: boolean; data: PurchaseOrder }>(`/procurement/${id}/receive`, {});
     const po = response.data.data || response.data;
-    // Đảm bảo response có structure đúng
+    // Ensure response has correct structure
     if (!po) {
-      throw new Error('Không nhận được dữ liệu PO từ server');
+      throw new Error('Unable to receive PO data from server');
     }
     return po;
   },
